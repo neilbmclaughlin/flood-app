@@ -1,7 +1,7 @@
 const turf = require('@turf/turf')
 
 class OutlookPolys {
-  constructor (outlook, place) {
+  constructor (outlook, place, logger = console) {
     const polys = []
     const lookup = [[1, 1, 1, 1], [1, 1, 2, 2], [2, 2, 3, 3], [2, 3, 3, 4]]
 
@@ -18,20 +18,35 @@ class OutlookPolys {
         riskAreaBlock.polys.forEach(poly => {
           // if linestring ( i.e. coastal ) add buffer and change geometry for use with turf
           if (poly.poly_type === 'coastal') {
-            const feature = {
-              type: 'Feature',
-              properties: { polyType: 'coastal' },
-              geometry: {
-                type: 'LineString',
-                coordinates: poly.coordinates
+            try {
+              const feature = {
+                type: 'Feature',
+                properties: { polyType: 'coastal' },
+                geometry: {
+                  type: 'LineString',
+                  coordinates: poly.coordinates
+                }
               }
-            }
 
-            const buffer = turf.buffer(feature, 1, { units: 'miles' })
-            const coordinates = buffer.geometry.coordinates
-            feature.geometry.type = 'Polygon'
-            feature.geometry.coordinates = coordinates
-            poly.coordinates = coordinates
+              const buffer = turf.buffer(feature, 1, { units: 'miles' })
+              const coordinates = buffer.geometry.coordinates
+              feature.geometry.type = 'Polygon'
+              feature.geometry.coordinates = coordinates
+              poly.coordinates = coordinates
+            } catch (e) {
+              logger.warn({
+                situation: 'ERROR_PROCESSING_OUTLOOK_POLY',
+                data: poly || riskAreaBlock?.id || riskArea?.id
+                  ? {
+                      areaId: riskArea.id,
+                      blockId: riskAreaBlock.id,
+                      poly
+                    }
+                  : outlook,
+                err: e
+              })
+              throw e
+            }
           }
 
           // test if poly intersects
