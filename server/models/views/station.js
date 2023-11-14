@@ -15,7 +15,7 @@ class ViewModel {
     this.station = new Station(station)
     this.station.riverNavigation = river
     this.id = station.id
-
+    console.log(this.station)
     this.station.trend = river.trend
 
     Object.assign(this, {
