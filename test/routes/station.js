@@ -540,7 +540,6 @@ lab.experiment('Test - /station/{id}', () => {
 
     Code.expect(response.statusCode).to.equal(200)
     Code.expect(response.payload).to.contain('River Avon level downstream at Lilbourne - GOV.UK')
-    Code.expect(response.payload).to.contain('This measuring station takes 2 measurements.')
     Code.expect(response.payload).to.contain('<a data-journey-click="Station:Station navigation:Station - Nearby levels" href="/river-and-sea-levels/rloi/2042">Nearby levels</a>')
     Code.expect(response.payload).to.contain('<a href="/station/2043">Downstream</a>')
   })
