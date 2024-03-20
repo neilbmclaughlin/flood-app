@@ -1,5 +1,4 @@
 const floodServices = require('./flood')
-const locationService = require('./location')
 const webchatServices = require('./webchat')
 const config = require('../config')
 
@@ -234,14 +233,6 @@ module.exports = server => {
     cache: {
       cache: cacheType,
       expiresIn: minutes(1),
-      generateTimeout: seconds(10)
-    }
-  })
-
-  server.method('location.find', locationService.find, {
-    cache: {
-      cache: cacheType,
-      expiresIn: minutes(expiresIn15),
       generateTimeout: seconds(10)
     }
   })
