@@ -12,9 +12,12 @@ const {
 } = require('../models/views/river-and-sea-levels')
 const util = require('../util')
 
-const constants = require('../constants')
-
 const route = 'river-and-sea-levels'
+
+const miles = 1609.344
+const joiValidationQMax = 200
+const joiValidationGroupMax = 11
+const joiValidationSearchTypeMax = 11
 
 module.exports = [{
   method: 'GET',
@@ -61,7 +64,7 @@ module.exports = [{
 
     if (riverLevelStation) {
       const radius = 8000 // metres
-      const distanceInMiles = Math.round(radius / constants.riverAndSeaLevels.distanceInMiles)
+      const distanceInMiles = Math.round(radius / miles)
       const referencePoint = {
         lat: coordinates.coordinates[1],
         lon: coordinates.coordinates[0],
@@ -83,7 +86,7 @@ module.exports = [{
 
     if (rainfallStation) {
       const radius = 8000 // metres
-      const distanceInMiles = Math.round(radius / constants.riverAndSeaLevels.distanceInMiles)
+      const distanceInMiles = Math.round(radius / miles)
       const referencePoint = {
         lat: rainfallStation.lat,
         lon: rainfallStation.lon,
@@ -127,9 +130,9 @@ module.exports = [{
   options: {
     validate: {
       query: joi.object({
-        q: joi.string().trim().max(constants.riverAndSeaLevels.joiValidationQMax),
-        group: joi.string().trim().max(constants.riverAndSeaLevels.joiValidationGroupMax),
-        searchType: joi.string().trim().max(constants.riverAndSeaLevels.joiValidationSearchTypeMax),
+        q: joi.string().trim().max(joiValidationQMax),
+        group: joi.string().trim().max(joiValidationGroupMax),
+        searchType: joi.string().trim().max(joiValidationSearchTypeMax),
         includeTypes: joi.string().default('place,river'),
         'rloi-id': joi.string(),
         'rainfall-id': joi.string(),
