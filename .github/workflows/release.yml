@@ -1,0 +1,97 @@
+name: Create Release Branch and Pull Requests
+
+on:
+  workflow_dispatch:
+    inputs:
+      jira_release_id:
+        type: string
+        description: id of release in Jira
+      proposed_release_date:
+        type: string
+        description: Proposed release date (dd/mm/yyyy)
+      db_changes:
+        type: boolean
+        description: Release includes DB changes?
+      increment:
+        type: choice
+        description: Release increment
+        options: 
+        - major
+        - minor
+        - patch
+        
+jobs:
+  create_release_branch_and_draft_pr:
+    runs-on: ubuntu-latest
+    
+    steps:
+    
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: development
+          fetch-depth: 0 
+
+      - name: Set up Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Bump version
+        run: |
+          npm version --no-git-tag-version ${{ github.event.inputs.increment }}
+          version=$(jq -r '.version' package.json)
+          echo VERSION=$version >> "$GITHUB_ENV"
+          echo RELEASE_BRANCH="release/$version" >> "$GITHUB_ENV"
+
+      - name: Create release branch
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git switch -c $RELEASE_BRANCH
+          git add .
+          git commit -m "Bump version number (${VERSION})"
+          git push origin $RELEASE_BRANCH
+        env:
+          FLOOD_APP_BING_KEY: "${{ secrets.FLOOD_APP_BING_KEY }}"
+          FLOOD_APP_BING_KEY_LOCATION: "${{ secrets.FLOOD_APP_BING_KEY_LOCATION }}"
+          FLOOD_APP_BING_KEY_MAP: "${{ secrets.FLOOD_APP_BING_KEY_MAP }}"
+          FLOOD_APP_BING_URL: "${{ secrets.FLOOD_APP_BING_URL }}"
+          FLOOD_APP_NRW_STATION_URL: "${{ secrets.FLOOD_APP_NRW_STATION_URL }}"
+          FLOOD_APP_SESSION_PASSWORD: "${{ secrets.FLOOD_APP_SESSION_PASSWORD }}"
+
+      - name: Create release notes
+        run: |
+          release_notes_file="release-docs/CFF-${VERSION}.md"
+          temp_file=$(mktemp)
+          git log --oneline --pretty=%s origin/master...$RELEASE_BRANCH --grep '^FSR-' > $temp_file
+          db_change_flag=$([[ "${{ github.event.inputs.db_changes }}" == "true" ]] && echo "-c" || echo "")
+          npm run create-release-notes -- \
+            --file $temp_file $db_change_flag \
+            --date "${{ github.event.inputs.proposed_release_date }}" \
+            --release "$VERSION" \
+            --output $release_notes_file \
+            --id "${{ github.event.inputs.jira_release_id }}" \
+            --template "release-docs/template.njk"
+          git add $release_notes_file
+          git commit --no-verify -m "Add release notes (${VERSION})"
+          git push origin $RELEASE_BRANCH
+          echo RELEASE_NOTES_FILE=$release_notes_file >> "$GITHUB_ENV"
+
+      - name: Create Draft PRs
+        run: |
+          gh pr create --base master --title "Release $VERSION" --body "TBC"
+          gh pr create --base development --title "Release $VERSION"  --body "TBC"
+          # gh release create "${{ steps.get_current_version.outputs.version }}" --draft --title "Release ${{ steps.get_current_version.outputs.version }}" --notes "Refer to ./release-docs/CFF-${{ steps.get_current_version.outputs.version }}.md for release notes"
+        env:
+          # create classic PAT and then run `gh secret set GH_WORKFLOW`
+          GH_TOKEN: ${{ secrets.GH_WORKFLOW }}
+
+      - name: Run next workflow
+        run: gh workflow run --repo neilbmclaughlin/release-test-2 90865562 -f name="Release $VERSION" 
+        env:
+          # use PAT token with repo scope (github.token didn't work)
+          GH_TOKEN: ${{ secrets.GH_WORKFLOW }}
