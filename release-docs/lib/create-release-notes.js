@@ -2,27 +2,6 @@ const fs = require('fs')
 const nunjucks = require('nunjucks')
 const yargs = require('yargs')
 
-function formatDate (inputDate) {
-  const [day, month, year] = inputDate.split('/').map(Number)
-
-  // Validate year, month, and day
-  if (isNaN(year) || isNaN(month) || isNaN(day) ||
-      month < 1 || month > 12 || day < 1 || day > new Date(year, month, 0).getDate()) {
-    return `${inputDate} (invalid date, please correct)`
-  }
-
-  const dateObj = new Date(year, month - 1, day)
-
-  const options = {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  }
-
-  return dateObj.toLocaleDateString('en-GB', options)
-}
-
 const options = yargs
   .option('f', {
     alias: 'file',
@@ -74,7 +53,7 @@ const tickets = commitList.split('\n').filter(c => c.trim() !== '')
 
 const context = {
   version: options.release,
-  date: formatDate(options.date),
+  date: options.date,
   id: options.id,
   dbChanges: options.dbChanges,
   tickets
