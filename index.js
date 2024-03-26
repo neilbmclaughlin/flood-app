@@ -1,6 +1,7 @@
 const createServer = require('./server')
 const pino = require('./server/lib/logging/pino')
 
+// added comment
 module.exports = createServer()
   .then(server => {
     server.listener.requestTimeout = 0
