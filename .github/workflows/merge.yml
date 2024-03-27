@@ -45,30 +45,31 @@ jobs:
           echo TAG_VERSION="v$version" >> "$GITHUB_ENV"
           echo RELEASE_NOTES_FILE="./release-docs/CFF-${version}.md" >> "$GITHUB_ENV"
 
-      - name: Check branch exists
-        run: |
-          if ! git ls-remote --exit-code origin "refs/heads/${RELEASE_BRANCH}"; then
-            echo "Error: Branch ${RELEASE_BRANCH} does not exist." >&2
-            exit 1
-          fi
-
-      - name: Merge release > master PR
+      - name: Check PRs exist
         run: |
           master_pr=$(gh pr list --base "master" --head "${RELEASE_BRANCH}" --limit 1 --json number --state open --jq '.[] | .number')
-          gh pr comment --body "Merged from merge.yml workflow" $master_pr
-          gh pr merge --rebase $master_pr
-        env:
-          GH_TOKEN: ${{ secrets.GH_WORKFLOW }}
-
-      - name: Merge release > development PR
-        run: |
+          if [ $master_pr -eq 0 ] ; then
+            echo "Error: PR for ${RELEASE_BRANCH} > master does not exist."
+            exit 1
+          fi
           development_pr=$(gh pr list --base "development" --head "${RELEASE_BRANCH}" --limit 1 --json number --state open --jq '.[] | .number')
-          gh pr comment --body "Merged from merge.yml workflow" $development_pr
-          gh pr merge --rebase --delete-branch $development_pr
+          if [ $development_pr -eq 0 ] ; then
+            echo "Error: PR for ${RELEASE_BRANCH} > development does not exist."
+            exit 1
+          fi
+          echo MASTER_PR=$master_pr >> "$GITHUB_ENV"
+          echo DEVELOPMENT_PR=$development_pr >> "$GITHUB_ENV"
         env:
           GH_TOKEN: ${{ secrets.GH_WORKFLOW }}
 
-      - name: Create GitHub Release
+      - name: Merge PRs
+        run: |
+          gh pr merge --rebase $MASTER_PR
+          gh pr merge --rebase --delete-branch $DEVELOPMENT_PR
+        env:
+          GH_TOKEN: ${{ secrets.GH_WORKFLOW }}
+
+      - name: Create Release
         run: gh release create $TAG_VERSION --title "Release $VERSION" --notes "[release notes](/$RELEASE_NOTES_FILE)"
         env:
           GH_TOKEN: ${{ secrets.GH_WORKFLOW }}
