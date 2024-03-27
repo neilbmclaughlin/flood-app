@@ -6,6 +6,10 @@ on:
       version:
         type: string
         description: version for release
+      override:
+        type: boolean
+        description: Merge even if PR checks are not passing (do this at your peril)?
+        default: false
 
 jobs:
   merge_release_branch_and_create_release:
@@ -41,21 +45,39 @@ jobs:
           echo RELEASE_BRANCH="release/$version" >> "$GITHUB_ENV"
           echo TAG_VERSION="v$version" >> "$GITHUB_ENV"
           echo RELEASE_NOTES_FILE="./release-docs/CFF-${version}.md" >> "$GITHUB_ENV"
+          echo OVERRIDE=${{ github.event.inputs.override }} >> "$GITHUB_ENV"
 
-      - name: Check PRs exist
+      - name: Check Master PR exists and is mergeable
         run: |
-          master_pr=$(gh pr list --base "master" --head "${RELEASE_BRANCH}" --limit 1 --json number --state open --jq '.[] | .number')
-          if [ $master_pr -eq 0 ] ; then
-            echo "Error: PR for ${RELEASE_BRANCH} > master does not exist."
+          base=master
+          pr_id=$(gh pr list --base "$base" --head "${RELEASE_BRANCH}" --limit 1 --json number --state open --jq '.[] | .number')
+          if [ $pr_id -eq 0 ] ; then
+            echo "Error: PR for ${RELEASE_BRANCH} > $base does not exist."
             exit 1
           fi
-          development_pr=$(gh pr list --base "development" --head "${RELEASE_BRANCH}" --limit 1 --json number --state open --jq '.[] | .number')
-          if [ $development_pr -eq 0 ] ; then
-            echo "Error: PR for ${RELEASE_BRANCH} > development does not exist."
+          merge_status=$(gh pr view --json mergeStateStatus --jq '.mergeStateStatus' $pr_id ) 
+          if [[ "$merge_status" != 'CLEAN' ]] && ! $OVERRIDE ; then
+            echo "Error: PR for ${RELEASE_BRANCH} > $base ($pr_id) does not have merge status of is CLEAN and probably needs approval "
             exit 1
           fi
-          echo MASTER_PR=$master_pr >> "$GITHUB_ENV"
-          echo DEVELOPMENT_PR=$development_pr >> "$GITHUB_ENV"
+          echo MASTER_PR=$pr_id >> "$GITHUB_ENV"
+        env:
+          GH_TOKEN: ${{ secrets.GH_WORKFLOW }}
+
+      - name: Check Development PR exists and is mergeable
+        run: |
+          base=development
+          pr_id=$(gh pr list --base "$base" --head "${RELEASE_BRANCH}" --limit 1 --json number --state open --jq '.[] | .number')
+          if [ $pr_id -eq 0 ] ; then
+            echo "Error: PR for ${RELEASE_BRANCH} > $base does not exist."
+            exit 1
+          fi
+          merge_status=$(gh pr view --json mergeStateStatus --jq '.mergeStateStatus' $pr_id ) 
+          if [[ "$merge_status" != 'CLEAN' ]] && ! $OVERRIDE ; then
+            echo "Error: PR for ${RELEASE_BRANCH} > $base ($pr_id) does not have merge status of is CLEAN and probably needs approval "
+            exit 1
+          fi
+          echo DEVELOPMENT_PR=$pr_id >> "$GITHUB_ENV"
         env:
           GH_TOKEN: ${{ secrets.GH_WORKFLOW }}
 
