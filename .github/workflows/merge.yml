@@ -23,6 +23,17 @@ jobs:
           # if this fails the create/regenerate classic PAT and then populate it using `gh secret set GH_WORKFLOW`
           GH_TOKEN: ${{ secrets.GH_WORKFLOW }}
 
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: development
+          fetch-depth: 0
+
+      - name: Set up Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
       - name: Setup version env vars
         run: |
           version=${{ github.event.inputs.version }}
