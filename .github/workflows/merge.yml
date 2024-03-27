@@ -61,7 +61,9 @@ jobs:
 
       - name: Merge PRs
         run: |
+          gh pr comment --body "Merged by merge.yml workflow" $MASTER_PR
           gh pr merge --rebase $MASTER_PR
+          gh pr comment --body "Merged by merge.yml workflow" $DEVELOPMENT_PR
           gh pr merge --rebase --delete-branch $DEVELOPMENT_PR
         env:
           GH_TOKEN: ${{ secrets.GH_WORKFLOW }}

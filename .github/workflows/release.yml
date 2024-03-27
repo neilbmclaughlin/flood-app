@@ -105,15 +105,15 @@ jobs:
             echo RELEASE_NOTES_FILE=$release_notes_file >> "$GITHUB_ENV"
           fi
 
-      - name: Create Draft PRs
+      - name: Create PRs
         run: |
-          gh pr create --base master --title "Release $VERSION" --body "TBC"
-          gh pr create --base development --title "Release $VERSION"  --body "TBC"
+          gh pr create --base master --title "Release $VERSION" --body "Created by release.yml workflow"
+          gh pr create --base development --title "Release $VERSION"  --body "Created by release.yml workflow"
         env:
           # create classic PAT and then run `gh secret set GH_WORKFLOW`
           GH_TOKEN: ${{ secrets.GH_WORKFLOW }}
 
-      - name: Trigger release creation for flood-service
+      - name: Trigger release branch creation for flood-service
         run: |
           echo "trigger commented out"
           # gh workflow run --repo "$GITHUB_REPOSITORY_OWNER/flood-service" release.yml -f increment="${{ github.event.inputs.increment }}" -f proposed_release_date="${{ github.event.inputs.proposed_release_date }}" -f jira_release_id="${{ github.event.inputs.jira_release_id }}"
