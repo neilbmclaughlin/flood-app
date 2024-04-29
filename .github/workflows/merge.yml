@@ -36,7 +36,7 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-        
+
       - name: Setup version env vars
         run: |
           version=${{ github.event.inputs.version }}
@@ -50,6 +50,7 @@ jobs:
             function prCheck () {
               REPO=$1
               BASE=$2
+              gh pr list --repo $REPO --json title,mergeStateStatus,state,reviews --state OPEN --base $BASE --head $RELEASE_BRANCH --jq '.[] | [ select(.mergeStateStatus == "CLEAN" and .reviews[].state == "APPROVED") ]'
               COUNT=$(gh pr list --repo $REPO --json title,mergeStateStatus,state,reviews --state OPEN --base $BASE --head $RELEASE_BRANCH --jq '.[] | [ select(.mergeStateStatus == "CLEAN" and .reviews[].state == "APPROVED") ] | length ')
               if [ "$COUNT" -ne 1 ]; then
                 echo "Error: PR for merging $REPO $RELEASE_BRANCH into $BASE needs to be ready to merge and approved." >&2
