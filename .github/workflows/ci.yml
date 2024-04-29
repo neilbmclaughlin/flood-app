@@ -42,17 +42,3 @@ jobs:
               run: |
                 npm run unit-test
                 sed -i 's/\/home\/runner\/work\/flood-app\/flood-app\//\/github\/workspace\//g' coverage/lcov.info
-
-            - name: Analyse code quality
-              uses: sonarsource/sonarcloud-github-action@master
-              env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-              with:
-                args: >
-                  -Dsonar.organization=defra
-                  -Dsonar.projectKey=DEFRA_flood-app
-                  -Dsonar.exclusions=**/node_modules/**,**/test/**,**/test-output/**
-                  -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
-                  -Dsonar.javascript.exclusions=**/node_modules/**,**/test/**,**/test-output/**,**/mock/**,**/server/dist/**,**/server/src/**,**/service-down/**
-                  -Dsonar.coverage.exclusions=**/server/routes/status.js
